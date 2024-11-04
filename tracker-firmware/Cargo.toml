@@ -24,6 +24,7 @@ embassy-time = { git = "https://github.com/embassy-rs/embassy", features = [
     "defmt",
     "defmt-timestamp-uptime",
 ] }
+itertools = { version = "0.13.0", default-features = false }
 panic-probe = { version = "0.3", features = ["print-defmt"] }
 portable-atomic = { version = "1.5", features = ["critical-section"] }
 defmt = "0.3"
@@ -31,4 +32,3 @@ defmt-rtt = "0.4"
 pio-proc = "0.2"
 pio = "0.2.1"
 smart-leds = "0.4.0"
-itertools = { version = "0.13.0", default-features = false }
