@@ -31,6 +31,7 @@ defmt-rtt = "0.4"
 pio-proc = "0.2"
 pio = "0.2.1"
 smart-leds = "0.4.0"
+itertools = { version = "0.13.0", default-features = false }
 
 [profile.release]
 debug = 2

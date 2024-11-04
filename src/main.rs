@@ -8,6 +8,7 @@ use embassy_rp::peripherals::PIO0;
 use embassy_rp::pio::{InterruptHandler, Pio};
 use embassy_rp::pio_programs::ws2812::{PioWs2812, PioWs2812Program};
 use embassy_time::{Duration, Ticker};
+use itertools::Itertools;
 use smart_leds::RGB8;
 use {defmt_rtt as _, panic_probe as _};
 
@@ -41,7 +42,7 @@ async fn main(_spawner: Spawner) {
 
     // This is the number of leds in the string. Helpfully, the sparkfun thing plus and adafruit
     // feather boards for the 2040 both have one built in.
-    const NUM_LEDS: usize = 1;
+    const NUM_LEDS: usize = 57;
     let mut data = [RGB8::default(); NUM_LEDS];
 
     // Common neopixel pins:
@@ -50,18 +51,15 @@ async fn main(_spawner: Spawner) {
     let program = PioWs2812Program::new(&mut common);
     let mut ws2812 = PioWs2812::new(&mut common, sm0, p.DMA_CH0, p.PIN_16, &program);
 
-    // Loop forever making RGB values and pushing them out to the WS2812.
-    let mut ticker = Ticker::every(Duration::from_millis(10));
-    loop {
-        for j in 0..(256 * 5) {
-            debug!("New Colors:");
-            for i in 0..NUM_LEDS {
-                data[i] = wheel((((i * 256) as u16 / NUM_LEDS as u16 + j as u16) & 255) as u8) / 2;
-                debug!("R: {} G: {} B: {}", data[i].r, data[i].g, data[i].b);
-            }
-            ws2812.write(&data).await;
+    let cycle = (0..NUM_LEDS).cycle().skip(NUM_LEDS - 1).tuple_windows();
 
-            ticker.next().await;
-        }
+    // Loop forever making RGB values and pushing them out to the WS2812.
+    let mut ticker = Ticker::every(Duration::from_millis(3000));
+    for (last, current) in cycle {
+        data[last] = RGB8::from((0, 0, 0));
+        data[current] = RGB8::from((0, 0, 10));
+        ws2812.write(&data).await;
+
+        ticker.next().await;
     }
 }
