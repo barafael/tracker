@@ -2,6 +2,11 @@
 name = "tracker-firmware"
 version = "0.1.0"
 edition = "2021"
+default-run = "tracker-firmware"
+
+[[bin]]
+name = "color-eval"
+path = "bin/color_eval/main.rs"
 
 [dependencies]
 cortex-m-rt = "0.7.0"
