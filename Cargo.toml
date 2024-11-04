@@ -1,0 +1,43 @@
+[package]
+name = "tracker"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cortex-m-rt = "0.7.0"
+embassy-executor = { git = "https://github.com/embassy-rs/embassy", features = [
+    "task-arena-size-98304",
+    "arch-cortex-m",
+    "executor-thread",
+    "executor-interrupt",
+    "defmt",
+    "integrated-timers",
+] }
+embassy-rp = { git = "https://github.com/embassy-rs/embassy", features = [
+    "rp2040",
+    "defmt",
+    "unstable-pac",
+    "time-driver",
+    "critical-section-impl",
+] }
+embassy-time = { git = "https://github.com/embassy-rs/embassy", features = [
+    "defmt",
+    "defmt-timestamp-uptime",
+] }
+panic-probe = { version = "0.3", features = ["print-defmt"] }
+portable-atomic = { version = "1.5", features = ["critical-section"] }
+defmt = "0.3"
+defmt-rtt = "0.4"
+pio-proc = "0.2"
+pio = "0.2.1"
+smart-leds = "0.4.0"
+
+[profile.release]
+debug = 2
+lto = true
+opt-level = 'z'
+
+[profile.dev]
+debug = 2
+lto = true
+opt-level = "z"
