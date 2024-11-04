@@ -1,4 +1,4 @@
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Coordinate {
