@@ -1276,6 +1276,7 @@ dependencies = [
  "pio-proc",
  "portable-atomic",
  "smart-leds",
+ "tracker-mapper",
 ]
 
 [[package]]

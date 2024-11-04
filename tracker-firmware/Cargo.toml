@@ -32,3 +32,4 @@ defmt-rtt = "0.4"
 pio-proc = "0.2"
 pio = "0.2.1"
 smart-leds = "0.4.0"
+tracker-mapper = { path = "../tracker-mapper" }
