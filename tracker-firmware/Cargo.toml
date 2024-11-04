@@ -29,8 +29,6 @@ embassy-time = { git = "https://github.com/embassy-rs/embassy", features = [
 ] }
 
 panic-probe = { version = "0.3", features = ["print-defmt"] }
-portable-atomic = { version = "1.5", features = ["critical-section"] }
-pio-proc = "0.2"
 pio = "0.2.1"
 smart-leds = "0.4.0"
 tracker-mapper = { path = "../tracker-mapper" }
