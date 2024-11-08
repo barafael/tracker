@@ -37,3 +37,5 @@ panic-probe = { version = "0.3", features = ["print-defmt"] }
 pio = "0.2.1"
 smart-leds = "0.4.0"
 tracker-mapper = { path = "../tracker-mapper" }
+
+bno080 = { path = "../../bno080" }
