@@ -39,3 +39,4 @@ smart-leds = "0.4.0"
 tracker-mapper = { path = "../tracker-mapper" }
 
 bno080 = { path = "../../bno080" }
+ublox = { version = "0.4.5", default-features = false }
