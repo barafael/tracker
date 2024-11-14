@@ -5,10 +5,12 @@ use core::mem::swap;
 
 use defmt::*;
 use embassy_executor::Spawner;
-use embassy_rp::bind_interrupts;
-use embassy_rp::peripherals::PIO0;
-use embassy_rp::pio::{InterruptHandler, Pio};
-use embassy_rp::pio_programs::ws2812::{PioWs2812, PioWs2812Program};
+use embassy_rp::{
+    bind_interrupts,
+    peripherals::PIO0,
+    pio::{InterruptHandler, Pio},
+    pio_programs::ws2812::{PioWs2812, PioWs2812Program},
+};
 use embassy_time::{Duration, Ticker};
 use smart_leds::{colors, RGB8};
 use tracker_mapper::Coordinate;
