@@ -11,6 +11,7 @@ use embassy_rp::{
     pio_programs::ws2812::{PioWs2812, PioWs2812Program},
 };
 use embassy_time::{Duration, Ticker};
+use smart_leds::colors::BLACK;
 use smart_leds::RGB8;
 use {defmt_rtt as _, panic_probe as _};
 
@@ -21,7 +22,7 @@ bind_interrupts!(struct Irqs {
 });
 
 const NUM_LEDS: usize = 10;
-const LOOP_DURATION: Duration = Duration::from_millis(1000);
+const LOOP_DURATION: Duration = Duration::from_millis(80);
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
@@ -38,17 +39,16 @@ async fn main(_spawner: Spawner) -> ! {
 
     let mut ticker = Ticker::every(LOOP_DURATION);
 
-    loop {
-        println!("loop");
-        for i in 0..COLORS.len() {
-            let color = COLORS[i];
-            let name = COLOR_NAMES[i];
-            println!("{}", name);
-            leds.iter_mut().for_each(|led| *led = color);
+    for (color_index, i) in (0..57).cycle().zip((0..COLORS.len()).cycle()) {
+        let color = COLORS[color_index % COLORS.len()];
+        let name = COLOR_NAMES[color_index % COLORS.len()];
+        println!("{}", name);
+        leds.iter_mut().for_each(|l| *l = BLACK);
+        leds[i] = color;
 
-            led_strip.write(&leds).await;
+        led_strip.write(&leds).await;
 
-            ticker.next().await;
-        }
+        ticker.next().await;
     }
+    defmt::panic!();
 }

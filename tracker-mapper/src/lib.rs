@@ -1,13 +1,17 @@
 #![cfg_attr(not(test), no_std)]
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Coordinate {
     ring: u8,
     step: u8,
 }
 
+pub const NUM_LEDS: usize = 57;
+
+pub static ARRAY: [[u8; STEP_COUNT]; RING_COUNT] = make_table();
+
 impl Coordinate {
-    pub fn new(ring: u8, step: u8) -> Self {
+    pub const fn new(ring: u8, step: u8) -> Self {
         Self { ring, step }
     }
 
@@ -21,17 +25,41 @@ impl Coordinate {
     }
 }
 
-pub fn index_of(coordinate: Coordinate) -> u8 {
+pub const RING_COUNT: usize = 5;
+pub const STEP_COUNT: usize = 16;
+
+const fn make_table() -> [[u8; STEP_COUNT]; RING_COUNT] {
+    let mut array: [[u8; STEP_COUNT]; RING_COUNT] = [[0u8; STEP_COUNT]; RING_COUNT];
+    let mut ring = 0;
+    let mut step = 0;
+    loop {
+        loop {
+            array[ring as usize][step as usize] = index_of(Coordinate::new(ring, step));
+            step += 1;
+            if step == STEP_COUNT as u8 {
+                break;
+            }
+        }
+        ring += 1;
+        step = 0;
+        if ring == RING_COUNT as u8 {
+            break;
+        }
+    }
+    array
+}
+
+pub const fn index_of(coordinate: Coordinate) -> u8 {
     let virtual_index = virtual_index_of(coordinate);
     devirtualize_led_index(virtual_index)
 }
 
-fn virtual_index_of(Coordinate { ring, step }: Coordinate) -> u8 {
+const fn virtual_index_of(Coordinate { ring, step }: Coordinate) -> u8 {
     let result = ring * 16 + step;
     79 - result
 }
 
-fn devirtualize_led_index(virtual_index: u8) -> u8 {
+const fn devirtualize_led_index(virtual_index: u8) -> u8 {
     let virtual_index = virtual_index % 80;
     match virtual_index {
         0..48 => virtual_index,
@@ -41,7 +69,7 @@ fn devirtualize_led_index(virtual_index: u8) -> u8 {
             index + 48
         }
         64..80 => 56,
-        _ => unreachable!("Modulo above"),
+        _ => panic!("a"),
     }
 }
 
@@ -87,5 +115,21 @@ mod test {
     #[test_case(160 => 0)]
     fn devirtualizes_led_index(virtual_index: u8) -> u8 {
         devirtualize_led_index(virtual_index)
+    }
+
+    #[test]
+    fn index_of_and_table_are_equivalent() {
+        let table = make_table();
+
+        dbg!(std::mem::size_of_val(&table));
+
+        for ring in 0..RING_COUNT {
+            for step in 0..STEP_COUNT {
+                assert_eq!(
+                    table[ring][step],
+                    index_of(Coordinate::new(ring as u8, step as u8))
+                );
+            }
+        }
     }
 }
