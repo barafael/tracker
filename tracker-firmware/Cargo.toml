@@ -8,6 +8,10 @@ default-run = "tracker-firmware"
 name = "color-eval"
 path = "bin/color_eval/main.rs"
 
+[[bin]]
+name = "imu"
+path = "bin/imu.rs"
+
 [dependencies]
 cortex-m-rt = "0.7.0"
 defmt = "0.3"
