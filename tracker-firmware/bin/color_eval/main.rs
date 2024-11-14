@@ -1,6 +1,8 @@
 #![no_std]
 #![no_main]
 
+use core::mem::swap;
+
 use color_wheel::{COLORS, COLOR_NAMES};
 use defmt::*;
 use embassy_executor::Spawner;
@@ -21,8 +23,8 @@ bind_interrupts!(struct Irqs {
     PIO0_IRQ_0 => PioInterruptHandler<PIO0>;
 });
 
-const NUM_LEDS: usize = 10;
-const LOOP_DURATION: Duration = Duration::from_millis(80);
+const NUM_LEDS: usize = 57;
+const LOOP_DURATION: Duration = Duration::from_millis(500);
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
@@ -39,12 +41,13 @@ async fn main(_spawner: Spawner) -> ! {
 
     let mut ticker = Ticker::every(LOOP_DURATION);
 
-    for (color_index, i) in (0..57).cycle().zip((0..COLORS.len()).cycle()) {
-        let color = COLORS[color_index % COLORS.len()];
-        let name = COLOR_NAMES[color_index % COLORS.len()];
+    for (led_index, color_index) in (0..NUM_LEDS).cycle().zip((0..COLORS.len()).cycle()) {
+        let mut color = COLORS[color_index];
+        let name = COLOR_NAMES[color_index];
         println!("{}", name);
         leds.iter_mut().for_each(|l| *l = BLACK);
-        leds[i] = color;
+        swap(&mut color.r, &mut color.g);
+        leds[led_index] = color;
 
         led_strip.write(&leds).await;
 

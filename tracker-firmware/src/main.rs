@@ -1,6 +1,8 @@
 #![no_std]
 #![no_main]
 
+use core::mem::swap;
+
 use defmt::*;
 use embassy_executor::Spawner;
 use embassy_rp::bind_interrupts;
@@ -17,7 +19,7 @@ bind_interrupts!(struct Irqs {
 });
 
 const NUM_LEDS: usize = 57;
-const COLOR: RGB8 = colors::FIREBRICK;
+const COLOR: RGB8 = colors::ORANGE_RED;
 const LOOP_DURATION: Duration = Duration::from_millis(300);
 
 #[embassy_executor::main]
@@ -35,6 +37,9 @@ async fn main(_spawner: Spawner) -> ! {
 
     let mut ticker = Ticker::every(LOOP_DURATION);
     let mut previous_led_index = 0;
+    let mut color = COLOR;
+    color.g -= 40;
+    swap(&mut color.r, &mut color.g);
     loop {
         println!("loop");
         for distance in 0..5 {
@@ -44,7 +49,7 @@ async fn main(_spawner: Spawner) -> ! {
 
                 leds[previous_led_index] = colors::BLACK;
                 previous_led_index = led_index;
-                leds[led_index] = COLOR;
+                leds[led_index] = color;
 
                 led_strip.write(&leds).await;
 
