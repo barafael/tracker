@@ -21,7 +21,7 @@ color_wheel!(
         WHITE,
         SILVER,
         GRAY,
-        BLACK,
+        // BLACK,
         RED,
         MAROON,
         YELLOW,

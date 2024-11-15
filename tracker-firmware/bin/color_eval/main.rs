@@ -22,7 +22,7 @@ bind_interrupts!(struct Irqs {
 });
 
 const NUM_LEDS: usize = 57;
-const LOOP_DURATION: Duration = Duration::from_millis(500);
+const LOOP_DURATION: Duration = Duration::from_millis(300);
 
 #[inline(always)]
 fn adjust_color_for_led_type(color: &mut RGB8) {
