@@ -316,7 +316,7 @@ name = "embassy-embedded-hal"
 version = "0.2.0"
 source = "git+https://github.com/embassy-rs/embassy#f55ebef380b49d109216e2cd6821fa1c35202748"
 dependencies = [
- "embassy-futures 0.1.1 (git+https://github.com/embassy-rs/embassy)",
+ "embassy-futures",
  "embassy-sync",
  "embassy-time",
  "embedded-hal 0.2.7",
@@ -355,12 +355,6 @@ dependencies = [
 [[package]]
 name = "embassy-futures"
 version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f878075b9794c1e4ac788c95b728f26aa6366d32eeb10c7051389f898f7d067"
-
-[[package]]
-name = "embassy-futures"
-version = "0.1.1"
 source = "git+https://github.com/embassy-rs/embassy#f55ebef380b49d109216e2cd6821fa1c35202748"
 
 [[package]]
@@ -387,7 +381,7 @@ dependencies = [
  "defmt",
  "document-features",
  "embassy-embedded-hal",
- "embassy-futures 0.1.1 (git+https://github.com/embassy-rs/embassy)",
+ "embassy-futures",
  "embassy-hal-internal",
  "embassy-sync",
  "embassy-time",
@@ -1320,7 +1314,6 @@ dependencies = [
  "defmt",
  "defmt-rtt",
  "embassy-executor",
- "embassy-futures 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "embassy-rp",
  "embassy-time",
  "embedded-hal-async",

@@ -3,10 +3,9 @@
 
 use defmt::{info, println, trace, Format};
 use embassy_executor::Spawner;
-use embassy_futures::select::Either;
 use embassy_rp::{bind_interrupts, config, i2c, peripherals::I2C0};
-use embassy_time::{Delay, Duration, Ticker};
-use embedded_hal_async::{delay::DelayNs, i2c::I2c};
+use embassy_time::{Duration, Ticker, TimeoutError};
+use embedded_hal_async::i2c::I2c;
 use heapless::Vec;
 use {defmt_rtt as _, panic_probe as _};
 
@@ -36,21 +35,20 @@ async fn main(_spawner: Spawner) -> ! {
 
     let mut ticker = Ticker::every(LOOP_DURATION);
 
-    let mut delay = Delay;
-
     let mut devices: Vec<u8, 127> = heapless::Vec::new();
     loop {
         let mut changed = false;
         for addr in 1..=127 {
             trace!("Scanning Address {}", addr as u8);
 
-            let timeout = delay.delay_ms(10);
-            let result = embassy_futures::select::select(timeout, i2c.read(addr, &mut [0])).await;
+            let result =
+                embassy_time::with_timeout(Duration::from_millis(10), i2c.read(addr, &mut [0]))
+                    .await;
 
             let result = match result {
-                Either::Second(Ok(())) => Ok(()),
-                Either::Second(Err(e)) => Err(Error::I2cError(e)),
-                Either::First(()) => Err(Error::Timeout),
+                Ok(Ok(())) => Ok(()),
+                Ok(Err(e)) => Err(Error::I2cError(e)),
+                Err(TimeoutError) => Err(Error::Timeout),
             };
 
             let present = result.is_ok();
