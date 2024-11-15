@@ -1,8 +1,6 @@
 #![no_std]
 #![no_main]
 
-use core::mem::swap;
-
 use color_wheel::{COLORS, COLOR_NAMES};
 use defmt::*;
 use embassy_executor::Spawner;
@@ -26,6 +24,12 @@ bind_interrupts!(struct Irqs {
 const NUM_LEDS: usize = 57;
 const LOOP_DURATION: Duration = Duration::from_millis(500);
 
+#[inline(always)]
+fn adjust_color_for_led_type(color: &mut RGB8) {
+    #[cfg(feature = "sk6812")]
+    core::mem::swap(&mut color.r, &mut color.g);
+}
+
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
     let p = embassy_rp::init(Default::default());
@@ -46,7 +50,7 @@ async fn main(_spawner: Spawner) -> ! {
         let name = COLOR_NAMES[color_index];
         println!("{}", name);
         leds.iter_mut().for_each(|l| *l = BLACK);
-        swap(&mut color.r, &mut color.g);
+        adjust_color_for_led_type(&mut color);
         leds[led_index] = color;
 
         led_strip.write(&leds).await;

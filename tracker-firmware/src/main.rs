@@ -1,8 +1,6 @@
 #![no_std]
 #![no_main]
 
-use core::mem::swap;
-
 use defmt::*;
 use embassy_executor::Spawner;
 use embassy_rp::{
@@ -24,6 +22,12 @@ const NUM_LEDS: usize = 57;
 const COLOR: RGB8 = colors::ORANGE_RED;
 const LOOP_DURATION: Duration = Duration::from_millis(300);
 
+#[inline(always)]
+fn adjust_color_for_led_type(color: &mut RGB8) {
+    #[cfg(feature = "sk6812")]
+    core::mem::swap(&mut color.r, &mut color.g);
+}
+
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
     let p = embassy_rp::init(Default::default());
@@ -40,8 +44,11 @@ async fn main(_spawner: Spawner) -> ! {
     let mut ticker = Ticker::every(LOOP_DURATION);
     let mut previous_led_index = 0;
     let mut color = COLOR;
+
+    // make it nice orange color.
     color.g -= 40;
-    swap(&mut color.r, &mut color.g);
+
+    adjust_color_for_led_type(&mut color);
     loop {
         println!("loop");
         for distance in 0..5 {
