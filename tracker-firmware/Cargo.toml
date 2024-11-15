@@ -16,6 +16,10 @@ path = "bin/spiral.rs"
 name = "imu"
 path = "bin/imu.rs"
 
+[[bin]]
+name = "i2c_scan"
+path = "bin/i2c_scan.rs"
+
 [features]
 default = ["sk6812"]
 sk6812 = []
