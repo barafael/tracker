@@ -9,6 +9,10 @@ name = "color-eval"
 path = "bin/color_eval/main.rs"
 
 [[bin]]
+name = "spiral"
+path = "bin/spiral.rs"
+
+[[bin]]
 name = "imu"
 path = "bin/imu.rs"
 
