@@ -1,10 +1,9 @@
 #![no_std]
 #![no_main]
 
-use defmt::*;
 use embassy_executor::Spawner;
 use embassy_rp::{
-    bind_interrupts,
+    bind_interrupts, config,
     peripherals::PIO0,
     pio::{InterruptHandler, Pio},
     pio_programs::ws2812::{PioWs2812, PioWs2812Program},
@@ -22,7 +21,7 @@ const NUM_LEDS: usize = 57;
 const COLOR: RGB8 = colors::ORANGE_RED;
 const LOOP_DURATION: Duration = Duration::from_millis(10);
 
-#[inline(always)]
+#[inline]
 fn adjust_color_for_led_type(color: &mut RGB8) {
     #[cfg(feature = "sk6812")]
     core::mem::swap(&mut color.r, &mut color.g);
@@ -30,7 +29,7 @@ fn adjust_color_for_led_type(color: &mut RGB8) {
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
-    let p = embassy_rp::init(Default::default());
+    let p = embassy_rp::init(config::Config::default());
 
     let Pio {
         mut common, sm0, ..
@@ -50,7 +49,7 @@ async fn main(_spawner: Spawner) -> ! {
 
     adjust_color_for_led_type(&mut color);
     loop {
-        println!("loop");
+        defmt::println!("loop");
         for distance in 0..5 {
             for angle in 0..16 {
                 let coordinate = Coordinate::from_world_coordinates(distance, angle * (360 / 16));

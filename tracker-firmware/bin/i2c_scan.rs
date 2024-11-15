@@ -4,7 +4,7 @@
 use defmt::println;
 use embassy_executor::Spawner;
 use embassy_rp::{
-    bind_interrupts,
+    bind_interrupts, config,
     i2c::{self, InterruptHandler as I2cInterruptHandler},
     peripherals::I2C0,
 };
@@ -16,7 +16,7 @@ bind_interrupts!(struct Irqs {
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
-    let p = embassy_rp::init(Default::default());
+    let p = embassy_rp::init(config::Config::default());
 
     let sda = p.PIN_20;
     let scl = p.PIN_21;
@@ -30,8 +30,8 @@ async fn main(_spawner: Spawner) -> ! {
         let res = i2c.blocking_read(addr as u8, &mut [0]);
 
         // Check and Print Result
-        if let Ok(()) = res {
-            println!("Device Found at Address {}", addr as u8)
+        if res.is_ok() {
+            println!("Device Found at Address {}", addr as u8);
         }
     }
     panic!();

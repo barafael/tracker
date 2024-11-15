@@ -6,7 +6,7 @@ use core::f32::consts::{PI, TAU};
 use bno080::{interface::i2c::ALTERNATE_ADDRESS, wrapper::BNO080};
 use embassy_executor::Spawner;
 use embassy_rp::{
-    bind_interrupts, i2c,
+    bind_interrupts, config, i2c,
     peripherals::{I2C0, PIO0},
     pio::{InterruptHandler, Pio},
     pio_programs::ws2812::{PioWs2812, PioWs2812Program},
@@ -29,7 +29,7 @@ const NUM_LEDS: usize = 57;
 const COLOR: RGB8 = colors::ORANGE_RED;
 const LOOP_DURATION: Duration = Duration::from_millis(10);
 
-#[inline(always)]
+#[inline]
 fn adjust_color_for_led_type(color: &mut RGB8) {
     #[cfg(feature = "sk6812")]
     core::mem::swap(&mut color.r, &mut color.g);
@@ -37,7 +37,7 @@ fn adjust_color_for_led_type(color: &mut RGB8) {
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
-    let p = embassy_rp::init(Default::default());
+    let p = embassy_rp::init(config::Config::default());
 
     let sda = p.PIN_20;
     let scl = p.PIN_21;

@@ -4,7 +4,7 @@
 use bno080::{interface::i2c::ALTERNATE_ADDRESS, wrapper::BNO080};
 use embassy_executor::Spawner;
 use embassy_rp::{
-    bind_interrupts,
+    bind_interrupts, config,
     i2c::{self, InterruptHandler as I2cInterruptHandler},
     peripherals::I2C0,
 };
@@ -20,7 +20,7 @@ const LOOP_DURATION: Duration = Duration::from_millis(10);
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
-    let p = embassy_rp::init(Default::default());
+    let p = embassy_rp::init(config::Config::default());
 
     let sda = p.PIN_20;
     let scl = p.PIN_21;

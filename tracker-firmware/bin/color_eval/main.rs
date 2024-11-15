@@ -2,10 +2,9 @@
 #![no_main]
 
 use color_wheel::{COLORS, COLOR_NAMES};
-use defmt::*;
 use embassy_executor::Spawner;
 use embassy_rp::{
-    bind_interrupts,
+    bind_interrupts, config,
     peripherals::PIO0,
     pio::{InterruptHandler as PioInterruptHandler, Pio},
     pio_programs::ws2812::{PioWs2812, PioWs2812Program},
@@ -24,7 +23,7 @@ bind_interrupts!(struct Irqs {
 const NUM_LEDS: usize = 57;
 const LOOP_DURATION: Duration = Duration::from_millis(300);
 
-#[inline(always)]
+#[inline]
 fn adjust_color_for_led_type(color: &mut RGB8) {
     #[cfg(feature = "sk6812")]
     core::mem::swap(&mut color.r, &mut color.g);
@@ -32,7 +31,7 @@ fn adjust_color_for_led_type(color: &mut RGB8) {
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
-    let p = embassy_rp::init(Default::default());
+    let p = embassy_rp::init(config::Config::default());
 
     let Pio {
         mut common, sm0, ..
@@ -48,7 +47,7 @@ async fn main(_spawner: Spawner) -> ! {
     for (led_index, color_index) in (0..NUM_LEDS).cycle().zip((0..COLORS.len()).cycle()) {
         let mut color = COLORS[color_index];
         let name = COLOR_NAMES[color_index];
-        println!("{}", name);
+        defmt::println!("{}", name);
         leds.iter_mut().for_each(|l| *l = BLACK);
         adjust_color_for_led_type(&mut color);
         leds[led_index] = color;
