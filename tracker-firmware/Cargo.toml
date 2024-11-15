@@ -56,3 +56,6 @@ tracker-mapper = { path = "../tracker-mapper" }
 
 bno080 = { path = "../../bno080" }
 ublox = { version = "0.4.5", default-features = false }
+num-quaternion = { version = "1.0.2", default-features = false, features = [
+    "libm",
+] }
