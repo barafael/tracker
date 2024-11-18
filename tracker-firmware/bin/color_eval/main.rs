@@ -40,11 +40,10 @@ async fn main(_spawner: Spawner) -> ! {
     let mut ticker = Ticker::every(LOOP_DURATION);
 
     for (led_index, color_index) in (0..NUM_LEDS).cycle().zip((0..COLORS.len()).cycle()) {
-        let mut color = COLORS[color_index];
+        let color = adjust_color_for_led_type(COLORS[color_index]);
         let name = COLOR_NAMES[color_index];
         defmt::println!("{}", name);
         leds.iter_mut().for_each(|l| *l = BLACK);
-        adjust_color_for_led_type(&mut color);
         leds[led_index] = color;
 
         led_strip.write(&leds).await;

@@ -57,12 +57,11 @@ async fn main(_spawner: Spawner) -> ! {
     let mut leds = [RGB8::default(); NUM_LEDS];
 
     let mut ticker = Ticker::every(LOOP_DURATION);
-    let mut color = COLOR;
+    let mut color = adjust_color_for_led_type(COLOR);
 
     // make it nice orange color.
     color.g -= 40;
 
-    adjust_color_for_led_type(&mut color);
     leds.iter_mut().for_each(|l| *l = BLACK);
     leds[56] = color;
     led_strip.write(&leds).await;

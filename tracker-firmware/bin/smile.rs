@@ -4,7 +4,7 @@
 use embassy_executor::Spawner;
 use embassy_rp::{
     bind_interrupts,
-    clocks::{self, RoscRng},
+    clocks::RoscRng,
     config,
     peripherals::PIO0,
     pio::{InterruptHandler, Pio},
@@ -14,9 +14,10 @@ use embassy_time::Delay;
 use embedded_hal_async::delay::DelayNs;
 use rand_core::RngCore;
 use smart_leds::{
-    colors::{BLACK, BLUE_VIOLET, FIREBRICK, YELLOW},
+    colors::{BLUE_VIOLET, DARK_SLATE_GRAY, FIREBRICK, GAINSBORO, YELLOW},
     RGB8,
 };
+use tracker_firmware::adjust_color_for_led_type;
 use tracker_mapper::{index_of, Coordinate};
 use {defmt_rtt as _, panic_probe as _};
 
@@ -28,9 +29,7 @@ const NUM_LEDS: usize = 57;
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
-    let mut rng = RoscRng;
-    let mut config = config::Config::default();
-    config.clocks = clocks::ClockConfig::rosc();
+    let config = config::Config::default();
 
     let p = embassy_rp::init(config);
 
@@ -43,8 +42,17 @@ async fn main(_spawner: Spawner) -> ! {
 
     let mut leds = [RGB8::default(); NUM_LEDS];
 
-    let nose = [Coordinate::new(0, 0), Coordinate::new(1, 8)];
+    let mut rng = RoscRng;
+
+    let nose = [
+        Coordinate::new(0, 0),
+        Coordinate::new(1, 8),
+        Coordinate::new(1, 6),
+        Coordinate::new(1, 10),
+    ];
     let mouth = [
+        Coordinate::new(3, 5),
+        Coordinate::new(3, 6),
         Coordinate::new(3, 7),
         Coordinate::new(3, 8),
         Coordinate::new(3, 9),
@@ -57,25 +65,31 @@ async fn main(_spawner: Spawner) -> ! {
         Coordinate::new(2, 14),
         Coordinate::new(3, 14),
         // right.
-        Coordinate::new(2, 1),
+        Coordinate::new(2, 2),
         Coordinate::new(2, 3),
-        Coordinate::new(3, 2),
+        Coordinate::new(3, 3),
     ];
 
-    paint(&mut leds, &nose, YELLOW);
-    paint(&mut leds, &mouth, FIREBRICK);
-    paint(&mut leds, &eyes, BLUE_VIOLET);
+    let nose_color = adjust_color_for_led_type(YELLOW);
+    let mouth_color = adjust_color_for_led_type(FIREBRICK);
+    let eye_color = adjust_color_for_led_type(GAINSBORO);
 
-    led_strip.write(&leds).await;
+    paint(&mut leds, &nose, nose_color);
+    paint(&mut leds, &mouth, mouth_color);
+    paint(&mut leds, &eyes, eye_color);
 
     let mut delay = Delay;
     loop {
-        let eyes_open = gen_range(&mut rng, 3000, 8000);
+        led_strip.write(&leds).await;
+        let eyes_open = gen_range(&mut rng, 5000, 8000);
+        defmt::trace!("eyes open for {}ms", eyes_open);
         delay.delay_ms(eyes_open).await;
 
-        paint(&mut leds, &eyes, BLACK);
+        paint(&mut leds, &eyes, DARK_SLATE_GRAY / 2);
+        led_strip.write(&leds).await;
 
-        let eyes_closed = gen_range(&mut rng, 200, 1200);
+        let eyes_closed = gen_range(&mut rng, 100, 800);
+        defmt::trace!("eyes closing for {}ms", eyes_closed);
         delay.delay_ms(eyes_closed).await;
         paint(&mut leds, &eyes, BLUE_VIOLET);
     }
@@ -84,6 +98,8 @@ async fn main(_spawner: Spawner) -> ! {
 fn paint(leds: &mut [RGB8], coordinates: &[Coordinate], color: RGB8) {
     for coord in coordinates {
         let index = index_of(*coord) as usize;
+        let mut color = color;
+        color /= 9;
         leds[index] = color;
     }
 }
@@ -91,6 +107,7 @@ fn paint(leds: &mut [RGB8], coordinates: &[Coordinate], color: RGB8) {
 /// Random number within some range.
 fn gen_range(rng: &mut RoscRng, min: u32, max: u32) -> u32 {
     let r = rng.next_u32();
+    defmt::trace!("{}", r);
     let range = max - min;
     let r = r % range;
     min + r

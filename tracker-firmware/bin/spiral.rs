@@ -37,12 +37,11 @@ async fn main(_spawner: Spawner) -> ! {
 
     let mut ticker = Ticker::every(LOOP_DURATION);
     let mut previous_led_index = 0;
-    let mut color = COLOR;
+    let mut color = adjust_color_for_led_type(COLOR);
 
     // make it nice orange color.
     color.g -= 40;
 
-    adjust_color_for_led_type(&mut color);
     loop {
         defmt::println!("loop");
         for distance in 0..5 {
