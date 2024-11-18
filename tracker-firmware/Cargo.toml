@@ -21,6 +21,10 @@ name = "imu"
 path = "bin/imu.rs"
 
 [[bin]]
+name = "ublox_m8"
+path = "bin/ublox_m8.rs"
+
+[[bin]]
 name = "i2c_scan"
 path = "bin/i2c_scan.rs"
 
@@ -59,7 +63,8 @@ smart-leds = "0.4.0"
 tracker-mapper = { path = "../tracker-mapper" }
 
 bno080 = { path = "../../bno080" }
-ublox = { version = "0.4.5", default-features = false }
+ublox-core = { path = "../../ublox-core", features = ["defmt-03"] }
+
 num-quaternion = { version = "1.0.2", default-features = false, features = [
     "libm",
 ] }
@@ -67,3 +72,5 @@ heapless = { version = "0.8.0", features = ["defmt-03"] }
 embedded-hal-async = "1.0.0"
 thiserror = { version = "2.0.3", default-features = false }
 rand_core = "0.6.4"
+static_cell = "2.1.0"
+portable-atomic = { version = "1.9.0", features = ["critical-section"] }
