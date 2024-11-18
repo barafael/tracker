@@ -1,4 +1,4 @@
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 #![no_main]
 
 use core::f32::consts::{PI, TAU};
@@ -17,6 +17,7 @@ use smart_leds::{
     colors::{self, BLACK},
     RGB8,
 };
+use tracker_firmware::adjust_color_for_led_type;
 use tracker_mapper::{index_of, Coordinate};
 use {defmt_rtt as _, panic_probe as _};
 
@@ -28,12 +29,6 @@ bind_interrupts!(struct Irqs {
 const NUM_LEDS: usize = 57;
 const COLOR: RGB8 = colors::ORANGE_RED;
 const LOOP_DURATION: Duration = Duration::from_millis(10);
-
-#[inline]
-fn adjust_color_for_led_type(color: &mut RGB8) {
-    #[cfg(feature = "sk6812")]
-    core::mem::swap(&mut color.r, &mut color.g);
-}
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {

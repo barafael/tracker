@@ -1321,6 +1321,7 @@ dependencies = [
  "num-quaternion",
  "panic-probe",
  "pio",
+ "rand_core",
  "smart-leds",
  "thiserror 2.0.3",
  "tracker-mapper",

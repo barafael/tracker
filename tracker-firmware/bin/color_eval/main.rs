@@ -1,4 +1,4 @@
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 #![no_main]
 
 use color_wheel::{COLORS, COLOR_NAMES};
@@ -12,6 +12,7 @@ use embassy_rp::{
 use embassy_time::{Duration, Ticker};
 use smart_leds::colors::BLACK;
 use smart_leds::RGB8;
+use tracker_firmware::adjust_color_for_led_type;
 use {defmt_rtt as _, panic_probe as _};
 
 mod color_wheel;
@@ -22,12 +23,6 @@ bind_interrupts!(struct Irqs {
 
 const NUM_LEDS: usize = 57;
 const LOOP_DURATION: Duration = Duration::from_millis(300);
-
-#[inline]
-fn adjust_color_for_led_type(color: &mut RGB8) {
-    #[cfg(feature = "sk6812")]
-    core::mem::swap(&mut color.r, &mut color.g);
-}
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
