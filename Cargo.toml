@@ -2,7 +2,7 @@
 
 resolver = "2"
 
-members = ["tracker-firmware", "tracker-mapper"]
+members = ["tracker-firmware", "tracker-mapper", "lines-codec"]
 
 [profile.release]
 debug = 2

@@ -1,0 +1,8 @@
+[package]
+name = "lines-codec"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+embedded-io = "0.6.1"
+rbf = { git = "https://www.github.com/barafael/rbf-rs.git" }
