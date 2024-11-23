@@ -87,3 +87,5 @@ embedded-io = "0.6.1"
 tiny-nmea = { version = "0.1.0", path = "../../rust-monorepo/tiny-nmea", features = [
     "defmt-03",
 ] }
+embassy-sync = "0.6.1"
+embassy-futures = "0.1.1"
