@@ -1,57 +1,17 @@
 #![cfg_attr(not(test), no_std)]
 
-use embedded_io::Read;
+mod read_line;
+mod read_line_async;
 
 pub struct ReadLine<R, const SIZE: usize> {
     source: R,
     buffer: rbf::RingBuffer<u8, SIZE>,
 }
 
-impl<R: Read, const SIZE: usize> ReadLine<R, SIZE> {
-    pub fn new(source: R) -> Self {
-        Self {
-            source,
-            buffer: rbf::RingBuffer::<u8, SIZE>::new(),
-        }
-    }
-
-    pub fn read_line(&mut self, buf: &mut [u8]) -> Result<usize, rbf::Error> {
-        loop {
-            // Check if the buffer contains a newline
-            if let Some(pos) = self.buffer.iter().position(|&b| b == b'\n') {
-                let len = self.buffer.read(&mut buf[..=pos])?;
-                return Ok(len);
-            }
-
-            // Otherwise, read more data from the source
-            // let bytes_read = self.source.read(buf).map_err(|e| rbf::Error::BufferFull)?;
-            let Ok(bytes_read) = self.source.read(buf) else {
-                continue;
-            };
-            if bytes_read == 0 {
-                // EOF reached
-                if self.buffer.is_empty() {
-                    return Ok(0); // No more data to read
-                } else {
-                    // Return the remaining data as the last line
-                    let count = self.buffer.read(buf)?;
-                    return Ok(count);
-                }
-            }
-
-            // Write data into the ring buffer
-            for byte in &buf[..bytes_read] {
-                self.buffer.push_unless_full(*byte)?;
-            }
-        }
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
 
-    use core::str;
     use std::collections::VecDeque;
 
     use embedded_io::{ErrorType, Read};
@@ -101,7 +61,7 @@ mod test {
             match line_reader.read_line(&mut line) {
                 Ok(0) => break,
                 Ok(n) => {
-                    println!("Read line: {:?}", str::from_utf8(&line[..n]).unwrap());
+                    println!("Read line: {:?}", std::str::from_utf8(&line[..n]).unwrap());
                     assert!(&line[..n].ends_with(b"\n"));
                 }
                 Err(e) => eprintln!("error: {e:?}"),

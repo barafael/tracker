@@ -730,6 +730,7 @@ name = "lines-codec"
 version = "0.1.0"
 dependencies = [
  "embedded-io",
+ "embedded-io-async",
  "rbf",
 ]
 
