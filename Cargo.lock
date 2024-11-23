@@ -1337,6 +1337,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "tiny-nmea"
+version = "0.1.0"
+dependencies = [
+ "defmt",
+ "heapless",
+]
+
+[[package]]
 name = "tracker-firmware"
 version = "0.1.0"
 dependencies = [
@@ -1359,6 +1367,7 @@ dependencies = [
  "smart-leds",
  "static_cell",
  "thiserror 2.0.3",
+ "tiny-nmea",
  "tracker-mapper",
  "ublox-core",
 ]

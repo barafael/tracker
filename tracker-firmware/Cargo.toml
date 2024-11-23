@@ -25,6 +25,10 @@ name = "read_line"
 path = "bin/read_line.rs"
 
 [[bin]]
+name = "read_nmea"
+path = "bin/read_nmea.rs"
+
+[[bin]]
 name = "ublox_m8"
 path = "bin/ublox_m8.rs"
 
@@ -80,3 +84,6 @@ rand_core = "0.6.4"
 static_cell = "2.1.0"
 portable-atomic = { version = "1.9.0", features = ["critical-section"] }
 embedded-io = "0.6.1"
+tiny-nmea = { version = "0.1.0", path = "../../rust-monorepo/tiny-nmea", features = [
+    "defmt-03",
+] }
