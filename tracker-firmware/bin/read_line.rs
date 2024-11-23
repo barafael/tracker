@@ -9,7 +9,6 @@ use embassy_rp::{
     peripherals::UART0,
     uart::{self, BufferedInterruptHandler, BufferedUart},
 };
-use embassy_time::{Duration, Ticker};
 use static_cell::StaticCell;
 use {defmt_rtt as _, panic_probe as _};
 
@@ -17,14 +16,11 @@ bind_interrupts!(struct Irqs {
     UART0_IRQ => BufferedInterruptHandler<UART0>;
 });
 
-const LOOP_DURATION: Duration = Duration::from_millis(10);
 const BUFFER_SIZE: usize = 256;
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
     let p = embassy_rp::init(config::Config::default());
-
-    let mut ticker = Ticker::every(LOOP_DURATION);
 
     static TX_BUF: StaticCell<[u8; BUFFER_SIZE]> = StaticCell::new();
     let tx_buf = &mut TX_BUF.init([0; BUFFER_SIZE])[..];
@@ -40,12 +36,12 @@ async fn main(_spawner: Spawner) -> ! {
     let mut line = [0u8; BUFFER_SIZE];
     loop {
         let Ok(len) = reader
-            .read_line(&mut line)
+            .read_line_async(&mut line)
+            .await
             .inspect_err(|e| defmt::warn!("{}", e))
         else {
             continue;
         };
         defmt::println!("{}", from_utf8(&line[..len]).ok());
-        ticker.next().await;
     }
 }

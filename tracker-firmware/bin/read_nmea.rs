@@ -40,7 +40,8 @@ async fn main(_spawner: Spawner) -> ! {
     let mut line = [0u8; BUFFER_SIZE];
     loop {
         let Ok(len) = reader
-            .read_line(&mut line)
+            .read_line_async(&mut line)
+            .await
             .inspect_err(|e| defmt::warn!("{}", e))
         else {
             continue;
