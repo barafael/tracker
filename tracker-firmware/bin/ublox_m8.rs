@@ -16,6 +16,7 @@ bind_interrupts!(struct Irqs {
 });
 
 const LOOP_DURATION: Duration = Duration::from_millis(10);
+const BUFFER_SIZE: usize = 64;
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
@@ -23,18 +24,21 @@ async fn main(_spawner: Spawner) -> ! {
 
     let mut ticker = Ticker::every(LOOP_DURATION);
 
-    static TX_BUF: StaticCell<[u8; 32]> = StaticCell::new();
-    let tx_buf = &mut TX_BUF.init([0; 32])[..];
-    static RX_BUF: StaticCell<[u8; 32]> = StaticCell::new();
-    let rx_buf = &mut RX_BUF.init([0; 32])[..];
+    static TX_BUF: StaticCell<[u8; BUFFER_SIZE]> = StaticCell::new();
+    let tx_buf = &mut TX_BUF.init([0; BUFFER_SIZE])[..];
+    static RX_BUF: StaticCell<[u8; BUFFER_SIZE]> = StaticCell::new();
+    let rx_buf = &mut RX_BUF.init([0; BUFFER_SIZE])[..];
 
-    let config = uart::Config::default();
+    let mut config = uart::Config::default();
+    config.baudrate = 9600;
     let uart = BufferedUart::new(p.UART0, Irqs, p.PIN_0, p.PIN_1, tx_buf, rx_buf, config);
 
     let mut driver = ublox_core::new_serial_driver(uart);
 
     loop {
-        match driver.handle_one_message() {
+        let msg = driver.handle_one_message();
+        defmt::info!("{}", msg);
+        match msg {
             Ok(msg_count) => {
                 if msg_count > 0 {
                     if let Some(nav_pvt) = driver.take_last_nav_pvt() {
@@ -53,5 +57,26 @@ async fn main(_spawner: Spawner) -> ! {
             }
         }
         ticker.next().await;
+    }
+}
+
+pub struct Codec<R> {
+    queue: heapless::Vec<u8, BUFFER_SIZE>,
+    reader: R,
+}
+
+impl<R> Codec<R>
+where
+    R: embedded_io::Read,
+{
+    pub fn from_reader(reader: R) -> Codec<R> {
+        Self {
+            queue: heapless::Vec::new(),
+            reader,
+        }
+    }
+
+    pub async fn next(&mut self, buffer: &mut [u8; BUFFER_SIZE]) -> Option<usize> {
+        todo!()
     }
 }

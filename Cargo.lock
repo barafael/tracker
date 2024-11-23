@@ -1013,8 +1013,8 @@ checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 [[package]]
 name = "rbf"
 version = "0.2.0"
-source = "git+https://www.github.com/barafael/rbf-rs.git#9cddbf203024d64b49e3a7d3f2a4eee8d25f2272"
 dependencies = [
+ "defmt",
  "embedded-io",
  "thiserror 2.0.3",
 ]
@@ -1350,6 +1350,7 @@ dependencies = [
  "embedded-hal-async",
  "embedded-io",
  "heapless",
+ "lines-codec",
  "num-quaternion",
  "panic-probe",
  "pio",

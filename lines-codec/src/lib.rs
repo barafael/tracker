@@ -24,7 +24,10 @@ impl<R: Read, const SIZE: usize> ReadLine<R, SIZE> {
             }
 
             // Otherwise, read more data from the source
-            let bytes_read = self.source.read(buf).unwrap();
+            // let bytes_read = self.source.read(buf).map_err(|e| rbf::Error::BufferFull)?;
+            let Ok(bytes_read) = self.source.read(buf) else {
+                continue;
+            };
             if bytes_read == 0 {
                 // EOF reached
                 if self.buffer.is_empty() {
