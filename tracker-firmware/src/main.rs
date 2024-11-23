@@ -192,7 +192,7 @@ async fn monitor_bno(mut bno: BNO080<I2cInterface<I2c<'static, I2C0, i2c::Async>
         let euler = quat.to_euler_angles();
         // defmt::info!("{:?}", (euler.roll, euler.pitch, euler.yaw));
 
-        let angle = euler.roll;
+        let angle = -euler.roll;
         let step = (angle + PI) / TAU;
         let step = step * 16.0;
         let step = step as u8;
