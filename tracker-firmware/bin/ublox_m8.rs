@@ -59,24 +59,3 @@ async fn main(_spawner: Spawner) -> ! {
         ticker.next().await;
     }
 }
-
-pub struct Codec<R> {
-    queue: heapless::Vec<u8, BUFFER_SIZE>,
-    reader: R,
-}
-
-impl<R> Codec<R>
-where
-    R: embedded_io::Read,
-{
-    pub fn from_reader(reader: R) -> Codec<R> {
-        Self {
-            queue: heapless::Vec::new(),
-            reader,
-        }
-    }
-
-    pub async fn next(&mut self, buffer: &mut [u8; BUFFER_SIZE]) -> Option<usize> {
-        todo!()
-    }
-}

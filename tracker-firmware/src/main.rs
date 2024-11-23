@@ -3,42 +3,65 @@
 
 use core::f32::consts::{PI, TAU};
 
+use core::{
+    clone::Clone,
+    default::Default,
+    iter::{FromIterator, Iterator},
+    marker::{Copy, Sized},
+    module_path,
+    option::Option::Some,
+    prelude::rust_2021::derive,
+    result::Result::Ok,
+};
+
 use bno080::{
     interface::{i2c::ALTERNATE_ADDRESS, I2cInterface},
     wrapper::BNO080,
 };
+use lines_codec::ReadLine;
+use num_quaternion::Q32;
+
 use defmt::unwrap;
-use embassy_executor::{Executor, Spawner};
+use {defmt_rtt as _, panic_probe as _};
+
+use embassy_executor::Executor;
 use embassy_futures::select::{self, Either};
+use embassy_rp::peripherals::UART0;
 use embassy_rp::{
     bind_interrupts, config,
     i2c::{self, I2c},
     multicore::{spawn_core1, Stack},
-    peripherals::{DMA_CH0, I2C0, PIN_16, PIO0},
+    peripherals::{I2C0, PIO0},
     pio::{InterruptHandler, Pio},
     pio_programs::ws2812::{PioWs2812, PioWs2812Program},
+    uart::{self, BufferedInterruptHandler, BufferedUart},
 };
 use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal};
 use embassy_time::{Delay, Duration, Ticker};
-use num_quaternion::Q32;
+
 use smart_leds::{
     colors::{self, BLACK},
     RGB8,
 };
+
 use static_cell::StaticCell;
+
 use tiny_nmea::NMEA;
+
 use tracker_firmware::adjust_color_for_led_type;
 use tracker_mapper::{index_of, Coordinate};
-use {defmt_rtt as _, panic_probe as _};
 
 bind_interrupts!(struct Irqs {
     PIO0_IRQ_0 => InterruptHandler<PIO0>;
     I2C0_IRQ => i2c::InterruptHandler<I2C0>;
+    UART0_IRQ => BufferedInterruptHandler<UART0>;
 });
 
 const NUM_LEDS: usize = 57;
 const COLOR: RGB8 = colors::ORANGE_RED;
 const BNO_UPDATE_PERIOD: Duration = Duration::from_millis(10);
+
+const UART_BUFFER_SIZE: usize = 256;
 
 static STEP: Signal<CriticalSectionRawMutex, u8> = Signal::new();
 static NMEA: Signal<CriticalSectionRawMutex, NMEA> = Signal::new();
@@ -80,11 +103,23 @@ fn main() -> ! {
     let led_strip = PioWs2812::new(&mut common, sm0, p.DMA_CH0, p.PIN_16, &ws2812_program);
     let leds = [RGB8::default(); NUM_LEDS];
 
+    // NMEA over UART message reader.
+    static TX_BUF: StaticCell<[u8; UART_BUFFER_SIZE]> = StaticCell::new();
+    let tx_buf = &mut TX_BUF.init([0; UART_BUFFER_SIZE])[..];
+    static RX_BUF: StaticCell<[u8; UART_BUFFER_SIZE]> = StaticCell::new();
+    let rx_buf = &mut RX_BUF.init([0; UART_BUFFER_SIZE])[..];
+
+    let mut config = uart::Config::default();
+    config.baudrate = 9600;
+    let uart = BufferedUart::new(p.UART0, Irqs, p.PIN_0, p.PIN_1, tx_buf, rx_buf, config);
+
+    let reader = lines_codec::ReadLine::<_, UART_BUFFER_SIZE>::new(uart);
+
     // Core 0 runs GPS and main loop with LED update logic.
     let executor0 = EXECUTOR0.init(Executor::new());
     executor0.run(|spawner| {
         unwrap!(spawner.spawn(main_task(led_strip, leds)));
-        unwrap!(spawner.spawn(monitor_gps()));
+        unwrap!(spawner.spawn(monitor_gps(reader)));
     });
 }
 
@@ -119,16 +154,31 @@ async fn main_task(
 }
 
 #[embassy_executor::task]
-async fn monitor_gps() {
-    let mut ticker = Ticker::every(Duration::from_secs(1));
+async fn monitor_gps(mut reader: ReadLine<BufferedUart<'static, UART0>, UART_BUFFER_SIZE>) {
+    let mut nmea = tiny_nmea::NMEA::new();
+    let mut line = [0u8; UART_BUFFER_SIZE];
+
     loop {
-        ticker.next().await;
+        let Ok(len) = reader
+            .read_line_async(&mut line)
+            .await
+            .inspect_err(|e| defmt::warn!("{}", e))
+        else {
+            continue;
+        };
+        defmt::trace!("{}", core::str::from_utf8(&line[..len]).ok());
+
+        let s = heapless::String::from_iter(line[..len].iter().map(|c| *c as char));
+        let _ = nmea.update(&s).map_err(|()| defmt::warn!("parser error"));
+
+        defmt::println!("{:?}", nmea);
     }
 }
 
 #[embassy_executor::task]
 async fn monitor_bno(mut bno: BNO080<I2cInterface<I2c<'static, I2C0, i2c::Async>>>) {
     defmt::println!("monitoring bno080");
+    let mut last_step = 255;
     let mut ticker = Ticker::every(BNO_UPDATE_PERIOD);
     loop {
         bno.handle_all_messages(&mut Delay, 1u8);
@@ -148,8 +198,10 @@ async fn monitor_bno(mut bno: BNO080<I2cInterface<I2c<'static, I2C0, i2c::Async>
         let step = step as u8;
         defmt::info!("step: {}", step);
 
-        // TODO only signal if there was an actual change.
-        STEP.signal(step);
+        if step != last_step {
+            STEP.signal(step);
+            last_step = step;
+        }
 
         ticker.next().await;
     }
