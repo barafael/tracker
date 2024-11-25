@@ -6,11 +6,10 @@ use core::str::from_utf8;
 use defmt::{dbg, println};
 use embassy_executor::Spawner;
 use embassy_rp::{
-    bind_interrupts, config,
+    bind_interrupts,
     peripherals::UART0,
     uart::{self, BufferedInterruptHandler, BufferedUart},
 };
-use heapless::String;
 use static_cell::StaticCell;
 use {defmt_rtt as _, panic_probe as _};
 
@@ -22,7 +21,8 @@ const BUFFER_SIZE: usize = 256;
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
-    let p = embassy_rp::init(config::Config::default());
+    let config = embassy_rp::config::Config::default();
+    let p = embassy_rp::init(config);
 
     static TX_BUF: StaticCell<[u8; BUFFER_SIZE]> = StaticCell::new();
     let tx_buf = &mut TX_BUF.init([0; BUFFER_SIZE])[..];
@@ -48,7 +48,7 @@ async fn main(_spawner: Spawner) -> ! {
         };
         defmt::trace!("{}", from_utf8(&line[..len]).ok());
 
-        let s = String::from_iter(line[..len].iter().map(|c| *c as char));
+        let s = line[..len].iter().map(|c| *c as char).collect();
         let _ = nmea.update(&s).map_err(|()| dbg!("parser error"));
 
         println!("{:?}", nmea);

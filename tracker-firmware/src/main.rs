@@ -6,7 +6,7 @@ use core::f32::consts::{PI, TAU};
 use core::{
     clone::Clone,
     default::Default,
-    iter::{FromIterator, Iterator},
+    iter::Iterator,
     marker::{Copy, Sized},
     module_path,
     option::Option::Some,
@@ -28,7 +28,7 @@ use embassy_executor::Executor;
 use embassy_futures::select::{self, Either};
 use embassy_rp::peripherals::UART0;
 use embassy_rp::{
-    bind_interrupts, config,
+    bind_interrupts,
     i2c::{self, I2c},
     multicore::{spawn_core1, Stack},
     peripherals::{I2C0, PIO0},
@@ -57,6 +57,9 @@ bind_interrupts!(struct Irqs {
     UART0_IRQ => BufferedInterruptHandler<UART0>;
 });
 
+const TARGET_LAT: f32 = 49.4569018;
+const TARGET_LON: f32 = 11.0894789;
+
 const NUM_LEDS: usize = 57;
 const COLOR: RGB8 = colors::ORANGE_RED;
 const BNO_UPDATE_PERIOD: Duration = Duration::from_millis(10);
@@ -73,17 +76,22 @@ static EXECUTOR1: StaticCell<Executor> = StaticCell::new();
 #[cortex_m_rt::entry]
 fn main() -> ! {
     defmt::println!("Hi! I'm your tracker.");
-    let p = embassy_rp::init(config::Config::default());
+    let config = embassy_rp::config::Config::default();
+    let p = embassy_rp::init(config);
 
     // IMU driver.
     let sda = p.PIN_20;
     let scl = p.PIN_21;
-    let i2c = i2c::I2c::new_async(p.I2C0, scl, sda, Irqs, i2c::Config::default());
+
+    let config = i2c::Config::default();
+    let i2c = i2c::I2c::new_async(p.I2C0, scl, sda, Irqs, config);
+
     let interface = bno080::interface::I2cInterface::new(i2c, ALTERNATE_ADDRESS);
-    let mut bno = BNO080::new_with_interface(interface);
-    bno.init(&mut Delay).unwrap();
-    bno.enable_rotation_vector(BNO_UPDATE_PERIOD.as_millis() as u16)
-        .unwrap();
+
+    let mut imu = BNO080::new_with_interface(interface);
+    imu.init(&mut Delay).expect("Failed to initialize BNO");
+    imu.enable_rotation_vector(BNO_UPDATE_PERIOD.as_millis() as u16)
+        .expect("Failed to enable rotation vector on BNO");
 
     // Core 1 runs IMU only.
     spawn_core1(
@@ -91,7 +99,7 @@ fn main() -> ! {
         unsafe { &mut *core::ptr::addr_of_mut!(CORE1_STACK) },
         move || {
             let executor1 = EXECUTOR1.init(Executor::new());
-            executor1.run(|spawner| unwrap!(spawner.spawn(monitor_bno(bno))));
+            executor1.run(|spawner| unwrap!(spawner.spawn(monitor_bno(imu))));
         },
     );
 
@@ -111,7 +119,9 @@ fn main() -> ! {
 
     let mut config = uart::Config::default();
     config.baudrate = 9600;
-    let uart = BufferedUart::new(p.UART0, Irqs, p.PIN_0, p.PIN_1, tx_buf, rx_buf, config);
+    let tx = p.PIN_0;
+    let rx = p.PIN_1;
+    let uart = BufferedUart::new(p.UART0, Irqs, tx, rx, tx_buf, rx_buf, config);
 
     let reader = lines_codec::ReadLine::<_, UART_BUFFER_SIZE>::new(uart);
 
@@ -159,40 +169,44 @@ async fn monitor_gps(mut reader: ReadLine<BufferedUart<'static, UART0>, UART_BUF
     let mut line = [0u8; UART_BUFFER_SIZE];
 
     loop {
-        let Ok(len) = reader
+        let Ok(bytes_read) = reader
             .read_line_async(&mut line)
             .await
             .inspect_err(|e| defmt::warn!("{}", e))
         else {
             continue;
         };
-        defmt::trace!("{}", core::str::from_utf8(&line[..len]).ok());
+        defmt::trace!("{}", core::str::from_utf8(&line[..bytes_read]).ok());
 
-        let s = heapless::String::from_iter(line[..len].iter().map(|c| *c as char));
+        let s = line[..bytes_read].iter().map(|c| *c as char).collect();
         let _ = nmea.update(&s).map_err(|()| defmt::warn!("parser error"));
 
         defmt::println!("{:?}", nmea);
+
+        let Some(lat) = nmea.latitude else { continue };
+        let Some(lon) = nmea.longitude else { continue };
+        let _vector = (lat - TARGET_LAT, lon - TARGET_LON);
     }
 }
 
 #[embassy_executor::task]
-async fn monitor_bno(mut bno: BNO080<I2cInterface<I2c<'static, I2C0, i2c::Async>>>) {
+async fn monitor_bno(mut imu: BNO080<I2cInterface<I2c<'static, I2C0, i2c::Async>>>) {
     defmt::println!("monitoring bno080");
     let mut last_step = 255;
     let mut ticker = Ticker::every(BNO_UPDATE_PERIOD);
     loop {
-        bno.handle_all_messages(&mut Delay, 1u8);
-        let quat = bno.rotation_quaternion().unwrap();
-        defmt::trace!("{:?}", quat);
-        let quat = Q32::new(quat[0], quat[1], quat[2], quat[3]);
-        let Some(quat) = quat.normalize() else {
+        imu.handle_all_messages(&mut Delay, 1);
+        let quaternion = imu.rotation_quaternion().unwrap();
+        defmt::trace!("{:?}", quaternion);
+        let quaternion = Q32::new(quaternion[0], quaternion[1], quaternion[2], quaternion[3]);
+        let Some(quaternion) = quaternion.normalize() else {
             defmt::warn!("not normalizable");
             continue;
         };
-        let euler = quat.to_euler_angles();
-        // defmt::info!("{:?}", (euler.roll, euler.pitch, euler.yaw));
+        let angles = quaternion.to_euler_angles();
+        // defmt::info!("{:?}", (angles.roll, angles.pitch, angles.yaw));
 
-        let angle = -euler.roll;
+        let angle = -angles.roll;
         let step = (angle + PI) / TAU;
         let step = step * 16.0;
         let step = step as u8;

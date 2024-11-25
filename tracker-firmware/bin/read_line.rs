@@ -5,7 +5,7 @@ use core::str::from_utf8;
 
 use embassy_executor::Spawner;
 use embassy_rp::{
-    bind_interrupts, config,
+    bind_interrupts,
     peripherals::UART0,
     uart::{self, BufferedInterruptHandler, BufferedUart},
 };
@@ -20,7 +20,8 @@ const BUFFER_SIZE: usize = 256;
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
-    let p = embassy_rp::init(config::Config::default());
+    let config = embassy_rp::config::Config::default();
+    let p = embassy_rp::init(config);
 
     static TX_BUF: StaticCell<[u8; BUFFER_SIZE]> = StaticCell::new();
     let tx_buf = &mut TX_BUF.init([0; BUFFER_SIZE])[..];

@@ -27,11 +27,10 @@ impl<R: embedded_io::Read, const SIZE: usize> ReadLine<R, SIZE> {
                 // EOF reached
                 if self.buffer.is_empty() {
                     return Ok(0); // No more data to read
-                } else {
-                    // Return the remaining data as the last line
-                    let count = self.buffer.read(buf)?;
-                    return Ok(count);
                 }
+                // Return the remaining data as the last line
+                let count = self.buffer.read(buf)?;
+                return Ok(count);
             }
 
             // Write data into the ring buffer

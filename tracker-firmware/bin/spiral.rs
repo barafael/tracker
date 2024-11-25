@@ -3,16 +3,17 @@
 
 use embassy_executor::Spawner;
 use embassy_rp::{
-    bind_interrupts, config,
+    bind_interrupts,
     peripherals::PIO0,
     pio::{InterruptHandler, Pio},
     pio_programs::ws2812::{PioWs2812, PioWs2812Program},
 };
 use embassy_time::{Duration, Ticker};
 use smart_leds::{colors, RGB8};
+use {defmt_rtt as _, panic_probe as _};
+
 use tracker_firmware::adjust_color_for_led_type;
 use tracker_mapper::Coordinate;
-use {defmt_rtt as _, panic_probe as _};
 
 bind_interrupts!(struct Irqs {
     PIO0_IRQ_0 => InterruptHandler<PIO0>;
@@ -24,7 +25,8 @@ const LOOP_DURATION: Duration = Duration::from_millis(10);
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
-    let p = embassy_rp::init(config::Config::default());
+    let config = embassy_rp::config::Config::default();
+    let p = embassy_rp::init(config);
 
     let Pio {
         mut common, sm0, ..
@@ -35,15 +37,12 @@ async fn main(_spawner: Spawner) -> ! {
 
     let mut leds = [RGB8::default(); NUM_LEDS];
 
-    let mut ticker = Ticker::every(LOOP_DURATION);
-    let mut previous_led_index = 0;
     let mut color = adjust_color_for_led_type(COLOR);
+    color.g -= 40; // make it nice orange color.
 
-    // make it nice orange color.
-    color.g -= 40;
-
+    let mut previous_led_index = 0;
+    let mut ticker = Ticker::every(LOOP_DURATION);
     loop {
-        defmt::println!("loop");
         for distance in 0..5 {
             for angle in 0..16 {
                 let coordinate = Coordinate::from_world_coordinates(distance, angle * (360 / 16));

@@ -5,7 +5,6 @@ use embassy_executor::Spawner;
 use embassy_rp::{
     bind_interrupts,
     clocks::RoscRng,
-    config,
     peripherals::PIO0,
     pio::{InterruptHandler, Pio},
     pio_programs::ws2812::{PioWs2812, PioWs2812Program},
@@ -17,9 +16,10 @@ use smart_leds::{
     colors::{BLUE_VIOLET, DARK_SLATE_GRAY, FIREBRICK, GAINSBORO, YELLOW},
     RGB8,
 };
+use {defmt_rtt as _, panic_probe as _};
+
 use tracker_firmware::adjust_color_for_led_type;
 use tracker_mapper::{index_of, Coordinate};
-use {defmt_rtt as _, panic_probe as _};
 
 bind_interrupts!(struct Irqs {
     PIO0_IRQ_0 => InterruptHandler<PIO0>;
@@ -29,8 +29,7 @@ const NUM_LEDS: usize = 57;
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
-    let config = config::Config::default();
-
+    let config = embassy_rp::config::Config::default();
     let p = embassy_rp::init(config);
 
     let Pio {
@@ -99,16 +98,14 @@ fn paint(leds: &mut [RGB8], coordinates: &[Coordinate], color: RGB8) {
     for coord in coordinates {
         let index = index_of(*coord) as usize;
         let mut color = color;
-        color /= 9;
+        color /= 9; // adjust brightness
         leds[index] = color;
     }
 }
 
 /// Random number within some range.
 fn gen_range(rng: &mut RoscRng, min: u32, max: u32) -> u32 {
-    let r = rng.next_u32();
-    defmt::trace!("{}", r);
     let range = max - min;
-    let r = r % range;
+    let r = rng.next_u32() % range;
     min + r
 }

@@ -1,19 +1,19 @@
 #![cfg_attr(not(test), no_std)]
 #![no_main]
 
-use color_wheel::{COLORS, COLOR_NAMES};
 use embassy_executor::Spawner;
 use embassy_rp::{
-    bind_interrupts, config,
+    bind_interrupts,
     peripherals::PIO0,
     pio::{InterruptHandler as PioInterruptHandler, Pio},
     pio_programs::ws2812::{PioWs2812, PioWs2812Program},
 };
 use embassy_time::{Duration, Ticker};
-use smart_leds::colors::BLACK;
-use smart_leds::RGB8;
-use tracker_firmware::adjust_color_for_led_type;
+use smart_leds::{colors::BLACK, RGB8};
 use {defmt_rtt as _, panic_probe as _};
+
+use color_wheel::{COLORS, COLOR_NAMES};
+use tracker_firmware::adjust_color_for_led_type;
 
 mod color_wheel;
 
@@ -26,7 +26,8 @@ const LOOP_DURATION: Duration = Duration::from_millis(300);
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
-    let p = embassy_rp::init(config::Config::default());
+    let config = embassy_rp::config::Config::default();
+    let p = embassy_rp::init(config);
 
     let Pio {
         mut common, sm0, ..
@@ -39,10 +40,13 @@ async fn main(_spawner: Spawner) -> ! {
 
     let mut ticker = Ticker::every(LOOP_DURATION);
 
-    for (led_index, color_index) in (0..NUM_LEDS).cycle().zip((0..COLORS.len()).cycle()) {
+    let leds_cycled = (0..NUM_LEDS).cycle();
+    let colors_cycled = (0..COLORS.len()).cycle();
+    for (led_index, color_index) in leds_cycled.zip(colors_cycled) {
         let color = adjust_color_for_led_type(COLORS[color_index]);
         let name = COLOR_NAMES[color_index];
         defmt::println!("{}", name);
+
         leds.iter_mut().for_each(|l| *l = BLACK);
         leds[led_index] = color;
 
@@ -50,5 +54,5 @@ async fn main(_spawner: Spawner) -> ! {
 
         ticker.next().await;
     }
-    defmt::panic!();
+    defmt::unreachable!("infinite loop wasn't infinite. Rethink your life choices.");
 }

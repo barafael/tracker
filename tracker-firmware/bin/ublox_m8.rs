@@ -3,7 +3,7 @@
 
 use embassy_executor::Spawner;
 use embassy_rp::{
-    bind_interrupts, config,
+    bind_interrupts,
     peripherals::UART0,
     uart::{self, BufferedInterruptHandler, BufferedUart},
 };
@@ -20,9 +20,8 @@ const BUFFER_SIZE: usize = 64;
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
-    let p = embassy_rp::init(config::Config::default());
-
-    let mut ticker = Ticker::every(LOOP_DURATION);
+    let config = embassy_rp::config::Config::default();
+    let p = embassy_rp::init(config);
 
     static TX_BUF: StaticCell<[u8; BUFFER_SIZE]> = StaticCell::new();
     let tx_buf = &mut TX_BUF.init([0; BUFFER_SIZE])[..];
@@ -35,6 +34,7 @@ async fn main(_spawner: Spawner) -> ! {
 
     let mut driver = ublox_core::new_serial_driver(uart);
 
+    let mut ticker = Ticker::every(LOOP_DURATION);
     loop {
         let msg = driver.handle_one_message();
         defmt::info!("{}", msg);
